@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map Game</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map { height: 500px; width: 100%; }
+        .character { width: 10px; height: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <button onclick="startGame()">开始</button>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // TODO: JS code will go here
+        var map = L.map('map').setView([51.0447, -114.0719], 13);  // Centered on Calgary
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+}).addTo(map);
+
+var characters = [];
+var characterColors = ['red', 'blue', 'green', 'yellow', 'purple'];
+var gameInterval;
+
+function startGame() {
+    for (var i = 0; i < 5; i++) {
+        var lat = 51.0447 + (Math.random() - 0.5) / 10; // Random latitude within a small range around Calgary
+        var lng = -114.0719 + (Math.random() - 0.5) / 10; // Random longitude within a small range around Calgary
+        var character = L.circleMarker([lat, lng], {
+            color: characterColors[i],
+            fillColor: characterColors[i],
+            fillOpacity: 1,
+            radius: 5
+        }).addTo(map);
+        character.direction = { x: (Math.random() - 0.5) * 20, y: (Math.random() - 0.5) * 20 };
+        character.path = [character.getLatLng()]; // Add this line to store the path
+        character.line = L.polyline(character.path, {color: characterColors[i]}).addTo(map); // Add this line to display the path as a line
+        characters.push(character);
+    }
+    if (gameInterval) clearInterval(gameInterval);
+    gameInterval = setInterval(moveCharacters, 1000);
+}
+
+function moveCharacters() {
+    for (var char of characters) {
+        // Randomly update the character's direction before moving
+        char.direction = { x: (Math.random() - 0.5) * 20, y: (Math.random() - 0.5) * 20 };
+
+        var oldLatLng = char.getLatLng();
+        var newLatLng = map.layerPointToLatLng(
+            map.latLngToLayerPoint(oldLatLng).add(char.direction)
+        );
+        char.setLatLng(newLatLng);
+        char.path.push(newLatLng); // Update the character's path
+        char.line.addLatLng(newLatLng); // Update the displayed path
+
+        // Check if any characters have met
+        for (var otherChar of characters) {
+            if (char !== otherChar && oldLatLng.distanceTo(otherChar.getLatLng()) < 20) {
+                endGame();
+                return;
+            }
+        }
+    }
+}
+
+
+    </script>
+</body>
+</html>
+
